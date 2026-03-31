@@ -1,0 +1,19 @@
+services:
+
+  postgres:
+    ports:
+      - "5432:5432"
+    image: "postgres:14-alpine"
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - ./scripts/postgres-init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  socnetwork:
+    ports:
+      - "8080:8080"
+    image: socnetwork:latest
+    environment:
+      DB_URL: "jdbc:postgresql://postgres:5432/soc_network"
+    depends_on:
+      - postgres
