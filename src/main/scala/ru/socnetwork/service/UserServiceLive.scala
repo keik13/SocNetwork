@@ -8,6 +8,7 @@ import ru.socnetwork.api.{
   User,
   UserIdResponse
 }
+import ru.socnetwork.service.UserServiceLive.toUser
 import ru.socnetwork.storage.{UserRow, UserStorage}
 import zio.{Random, Task, URLayer, ZIO, ZLayer}
 
@@ -18,6 +19,7 @@ final case class UserServiceLive(
     passwordService: PasswordServiceLive,
     jwtService: JwtService
 ) extends UserService:
+
   override def login(login: LoginRequest): Task[Option[TokenResponse]] = (for
     user <- userStorage.getById(login.id).some
     isValid <- passwordService
@@ -43,15 +45,11 @@ final case class UserServiceLive(
   yield UserIdResponse(uuid)
 
   override def getById(id: UUID): Task[Option[User]] =
-    (for user <- userStorage.getById(id).some
-    yield User(
-      user.id,
-      user.firstName,
-      user.secondName,
-      user.birthdate,
-      user.biography,
-      user.city
-    )).unsome
+    (for userRow <- userStorage.getById(id).some
+    yield toUser(userRow)).unsome
+
+  override def search(firstName: String, lastName: String): Task[List[User]] =
+    userStorage.search(firstName, lastName).map(_.map(toUser))
 
 object UserServiceLive:
   val layer: URLayer[
@@ -59,3 +57,12 @@ object UserServiceLive:
     UserService
   ] =
     ZLayer.fromFunction(UserServiceLive.apply _)
+
+  def toUser(row: UserRow) = User(
+    row.id,
+    row.firstName,
+    row.secondName,
+    row.birthdate,
+    row.biography,
+    row.city
+  )

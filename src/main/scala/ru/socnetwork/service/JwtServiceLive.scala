@@ -3,7 +3,7 @@ package ru.socnetwork.service
 import pdi.jwt.{Jwt, JwtAlgorithm, JwtClaim, JwtZIOJson}
 import ru.socnetwork.api.JwtClaims
 import ru.socnetwork.conf.JwtConfig
-import ru.socnetwork.util.InvalidBody
+import ru.socnetwork.util.InvalidToken
 import zio.json.{DecoderOps, EncoderOps}
 import zio.{Clock, Task, URLayer, ZIO, ZLayer}
 
@@ -32,7 +32,7 @@ final case class JwtServiceLive(jwtConfig: JwtConfig) extends JwtService:
       r <- ZIO
         .from(jwt.content.fromJson[JwtClaims])
         .tapError(err => ZIO.logError(err))
-        .orElseFail(InvalidBody)
+        .orElseFail(InvalidToken)
     yield r
 
 object JwtServiceLive:

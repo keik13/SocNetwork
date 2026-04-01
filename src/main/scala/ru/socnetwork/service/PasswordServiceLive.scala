@@ -4,6 +4,7 @@ import com.password4j.{Password, SecureString}
 import zio.{Task, ULayer, ZIO, ZLayer}
 
 final case class PasswordServiceLive() extends PasswordService:
+
   override def hashPassword(plain: String): Task[String] = ZIO
     .attemptBlocking {
       val secure = new SecureString(plain.toCharArray)

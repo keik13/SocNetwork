@@ -50,6 +50,19 @@ object UserServiceSpec extends ZIOSpecDefault:
           userId <- userService.register(user)
           token <- userService.login(LoginRequest(userId.userId, user.password))
         yield assertTrue(token.nonEmpty)
+      },
+      test("should search registered user") {
+        for
+          userService <- ZIO.service[UserService]
+          _ <- userService.register(user)
+          _ <- userService.register(
+            user.copy(firstName = "Vasyaaaa", secondName = "Drisztdfslgkjd")
+          )
+          _ <- userService.register(
+            user.copy(firstName = "John", secondName = "Cow")
+          )
+          users <- userService.search("Vas", "Dri")
+        yield assertTrue(users.size == 2)
       }
     ) @@ DbMigrationAspect.migrateOnce()() @@ TestAspect.after(
       ZIO.serviceWithZIO[UserStorage](_.deleteAll())

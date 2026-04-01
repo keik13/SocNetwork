@@ -8,9 +8,13 @@ import ru.socnetwork.api.{
   User
 }
 import ru.socnetwork.db.DbMigrator
-import ru.socnetwork.server.SocNetworkServer.{fromOption, parseBody}
+import ru.socnetwork.server.SocNetworkServer.{
+  fromOption,
+  parseBody,
+  searchParams
+}
 import ru.socnetwork.service.UserService
-import ru.socnetwork.util.InvalidBody
+import ru.socnetwork.util.{InvalidBody, InvalidToken, MissingParams}
 import zio.http.*
 import zio.json.{EncoderOps, JsonDecoder, JsonEncoder}
 import zio.{IO, URLayer, ZIO, ZLayer}
@@ -40,9 +44,18 @@ final case class SocNetworkServer(
         (id: UUID, req: Request) =>
           for r <- userService.getById(id)
           yield fromOption[User](r)
+      },
+      Method.GET / "user" / "search" -> handler { (req: Request) =>
+        for
+          fullName <- ZIO
+            .fromOption(searchParams(req))
+            .orElseFail(MissingParams)
+          r <- userService.search(fullName._1, fullName._2)
+        yield Response.json(r.toJson)
       }
     ).handleErrorZIO {
-      case InvalidBody    => ZIO.succeed(Response.badRequest)
+      case InvalidBody | InvalidToken | MissingParams =>
+        ZIO.succeed(Response.badRequest)
       case err: Throwable =>
         ZIO
           .logError(err.getMessage)
@@ -80,3 +93,8 @@ object SocNetworkServer:
     opt match
       case Some(value) => Response.json(value.toJson)
       case None        => Response.notFound
+
+  def searchParams(req: Request): Option[(String, String)] =
+    (req.queryParam("first_name"), req.queryParam("last_name")) match
+      case (Some(fn), Some(ln)) => Some((fn, ln))
+      case _                    => None

@@ -92,6 +92,49 @@
         }
       },
       "response": []
+    },
+    {
+      "name": "localhost:8080/user/search",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "localhost:8080/user/search?first_name&last_name",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "user",
+            "search"
+          ],
+          "query": [
+            {
+              "key": "first_name",
+              "value": null,
+              "type": "text"
+            },
+            {
+              "key": "last_name",
+              "value": null,
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "response": []
     }
   ]
 }

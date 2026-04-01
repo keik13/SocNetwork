@@ -18,3 +18,5 @@ trait UserService:
   def register(register: RegisterRequest): Task[UserIdResponse]
 
   def getById(id: UUID): Task[Option[User]]
+
+  def search(firstName: String, lastName: String): Task[List[User]]

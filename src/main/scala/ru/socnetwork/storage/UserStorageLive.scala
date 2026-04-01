@@ -41,6 +41,15 @@ final case class UserStorageLive(quill: Quill.Postgres[SnakeCase])
     queryUser.filter(_.id == lift(id))
   ).map(_.headOption)
 
+  override def search(
+      firstName: String,
+      lastName: String
+  ): Task[List[UserRow]] = run(
+    queryUser
+      .filter(_.firstName like lift(s"$firstName%"))
+      .filter(_.secondName like lift(s"$lastName%"))
+  )
+
   override def deleteAll(): Task[Unit] = run(queryUser.delete).unit
 
 object UserStorageLive:
