@@ -4,6 +4,7 @@ import ru.socnetwork.conf.Configuration
 import ru.socnetwork.db.{Db, DbMigrator}
 import ru.socnetwork.server.SocNetworkServer
 import ru.socnetwork.service.{
+  CsvImportLive,
   JwtServiceLive,
   PasswordServiceLive,
   UserServiceLive
@@ -24,5 +25,6 @@ object Main extends ZIOAppDefault:
         UserServiceLive.layer,
         UserStorageLive.layer,
         PasswordServiceLive.layer,
-        JwtServiceLive.layer
+        JwtServiceLive.layer,
+        CsvImportLive.layer
       )

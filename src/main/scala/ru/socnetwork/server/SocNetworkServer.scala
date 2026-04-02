@@ -13,7 +13,7 @@ import ru.socnetwork.server.SocNetworkServer.{
   parseBody,
   searchParams
 }
-import ru.socnetwork.service.UserService
+import ru.socnetwork.service.{CsvImport, UserService}
 import ru.socnetwork.util.{InvalidBody, InvalidToken, MissingParams}
 import zio.http.*
 import zio.json.{EncoderOps, JsonDecoder, JsonEncoder}
@@ -23,6 +23,7 @@ import java.util.UUID
 
 final case class SocNetworkServer(
     userService: UserService,
+    importCsv: CsvImport,
     migrator: DbMigrator
 ):
 
@@ -52,6 +53,10 @@ final case class SocNetworkServer(
             .orElseFail(MissingParams)
           r <- userService.search(fullName._1, fullName._2)
         yield Response.json(r.toJson)
+      },
+      Method.POST / "user" / "import" -> handler { (req: Request) =>
+        for _ <- importCsv.importCsv()
+        yield Response.ok
       }
     ).handleErrorZIO {
       case InvalidBody | InvalidToken | MissingParams =>
@@ -80,7 +85,8 @@ final case class SocNetworkServer(
     yield ()
 
 object SocNetworkServer:
-  val layer: URLayer[UserService with DbMigrator, SocNetworkServer] =
+  val layer
+      : URLayer[UserService with DbMigrator with CsvImport, SocNetworkServer] =
     ZLayer.fromFunction(SocNetworkServer.apply _)
 
   def parseBody[A: JsonDecoder](request: Request): IO[InvalidBody.type, A] =

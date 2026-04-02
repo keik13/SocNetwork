@@ -19,4 +19,6 @@ trait UserStorage:
 
   def deleteAll(): Task[Unit]
 
+  def getAll: Task[List[UserRow]]
+
   def search(firstName: String, lastName: String): Task[List[UserRow]]

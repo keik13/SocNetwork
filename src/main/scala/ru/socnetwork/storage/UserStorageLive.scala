@@ -52,6 +52,8 @@ final case class UserStorageLive(quill: Quill.Postgres[SnakeCase])
 
   override def deleteAll(): Task[Unit] = run(queryUser.delete).unit
 
+  override def getAll: Task[List[UserRow]] = run(queryUser)
+
 object UserStorageLive:
   val layer: URLayer[Quill.Postgres[SnakeCase], UserStorage] =
     ZLayer.fromFunction(UserStorageLive.apply _)
