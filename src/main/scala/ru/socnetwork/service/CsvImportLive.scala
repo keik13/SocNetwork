@@ -14,7 +14,7 @@ final case class CsvImportLive(userService: UserService) extends CsvImport:
       .scoped(
         ZIO.fromAutoCloseable(
           ZIO.attemptBlocking(
-            Files.newBufferedReader(java.nio.file.Paths.get("people.v2.csv"))
+            Files.newBufferedReader(java.nio.file.Paths.get("people.small.csv"))
           )
         )
       )
