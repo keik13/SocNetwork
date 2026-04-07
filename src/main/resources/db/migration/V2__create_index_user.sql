@@ -1,0 +1,1 @@
+create index if not exists first_name_last_name_index on soc_user(first_name varchar_pattern_ops, second_name varchar_pattern_ops);
