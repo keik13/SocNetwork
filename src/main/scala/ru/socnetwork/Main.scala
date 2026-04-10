@@ -1,7 +1,7 @@
 package ru.socnetwork
 
 import ru.socnetwork.conf.Configuration
-import ru.socnetwork.db.{Db, DbMigrator}
+import ru.socnetwork.db.{Db, DbMigrator, DbStrategy}
 import ru.socnetwork.server.SocNetworkServer
 import ru.socnetwork.service.{
   CsvImportLive,
@@ -19,7 +19,9 @@ object Main extends ZIOAppDefault:
       .provide(
         Configuration.layer,
         Db.dataSourceLayer,
-        Db.quillLayer,
+        Db.quillMasterLayer,
+        Db.quillSlaveLayer,
+        DbStrategy.layer,
         DbMigrator.layer,
         SocNetworkServer.layer,
         UserServiceLive.layer,

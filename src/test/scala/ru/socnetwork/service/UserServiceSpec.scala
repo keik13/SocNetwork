@@ -3,7 +3,7 @@ package ru.socnetwork.service
 import ru.socnetwork.api.{LoginRequest, RegisterRequest, User}
 import ru.socnetwork.conf.Configuration
 import ru.socnetwork.containers.DbMigrationAspect
-import ru.socnetwork.db.Db
+import ru.socnetwork.db.{Db, DbStrategy}
 import ru.socnetwork.storage.{UserStorage, UserStorageLive}
 import ru.socnetwork.containers.Containers
 import zio.ZIO
@@ -75,7 +75,9 @@ object UserServiceSpec extends ZIOSpecDefault:
       JwtServiceLive.layer,
       Configuration.layer,
       Containers.layer >>> Db.dataSourceLayer,
-      Db.quillLayer,
+      Db.quillMasterLayer,
+      Db.quillSlaveLayer,
+      DbStrategy.layer,
       Containers.postgresLayer
     ) @@ sequential
 

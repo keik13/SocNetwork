@@ -21,5 +21,5 @@ object Containers:
         jdbcUrl = container.getJdbcUrl
         username = container.getUsername
         password = container.getPassword
-      yield DbConfig(jdbcUrl, username, password)
+      yield DbConfig(jdbcUrl, jdbcUrl, username, password)
     }

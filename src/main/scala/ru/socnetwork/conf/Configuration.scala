@@ -16,7 +16,8 @@ final case class AppConfig(
 )
 
 final case class DbConfig(
-    url: String,
+    urlMaster: String,
+    urlSlave: String,
     user: String,
     password: String
 )

@@ -1,14 +1,7 @@
 package ru.socnetwork.storage
 
 import io.getquill.*
-import io.getquill.jdbczio.Quill
-import ru.socnetwork.api.{
-  LoginRequest,
-  RegisterRequest,
-  TokenResponse,
-  User,
-  UserIdResponse
-}
+import ru.socnetwork.db.DbStrategy
 import zio.{Task, URLayer, ZLayer}
 
 import java.time.LocalDate
@@ -24,37 +17,41 @@ final case class UserRow(
     password: String
 )
 
-final case class UserStorageLive(quill: Quill.Postgres[SnakeCase])
-    extends UserStorage:
+final case class UserStorageLive(db: DbStrategy) extends UserStorage:
 
-  import quill.*
+  import db.ctx.*
 
   private inline def queryUser = quote(
     querySchema[UserRow](entity = "soc_user")
   )
 
-  override def register(user: UserRow): Task[Unit] = run(
-    queryUser.insertValue(lift(user))
-  ).unit
+  override def register(user: UserRow): Task[Unit] =
+    db.write(
+      queryUser.insertValue(lift(user))
+    ).unit
 
-  override def getById(id: UUID): Task[Option[UserRow]] = run(
-    queryUser.filter(_.id == lift(id))
-  ).map(_.headOption)
+  override def getById(id: UUID): Task[Option[UserRow]] =
+    db.read(
+      queryUser.filter(_.id == lift(id))
+    ).map(_.headOption)
 
   override def search(
       firstName: String,
       lastName: String
-  ): Task[List[UserRow]] = run(
-    queryUser
-      .filter(_.firstName like lift(s"$firstName%"))
-      .filter(_.secondName like lift(s"$lastName%"))
-      .sortBy(_.id)
-  )
+  ): Task[List[UserRow]] =
+    db.read(
+      queryUser
+        .filter(_.firstName like lift(s"$firstName%"))
+        .filter(_.secondName like lift(s"$lastName%"))
+        .sortBy(_.id)
+    )
 
-  override def deleteAll(): Task[Unit] = run(queryUser.delete).unit
+  override def deleteAll(): Task[Unit] =
+    db.write(queryUser.delete).unit
 
-  override def getAll: Task[List[UserRow]] = run(queryUser)
+  override def getAll: Task[List[UserRow]] =
+    db.read(queryUser)
 
 object UserStorageLive:
-  val layer: URLayer[Quill.Postgres[SnakeCase], UserStorage] =
+  val layer: URLayer[DbStrategy, UserStorage] =
     ZLayer.fromFunction(UserStorageLive.apply _)
