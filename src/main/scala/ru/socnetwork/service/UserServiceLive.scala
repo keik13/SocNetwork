@@ -1,7 +1,7 @@
 package ru.socnetwork.service
 
 import ru.socnetwork.api.{
-  JwtClaims,
+  UserInfo,
   LoginRequest,
   RegisterRequest,
   TokenResponse,
@@ -25,7 +25,7 @@ final case class UserServiceLive(
     isValid <- passwordService
       .verifyPassword(login.password, user.password)
       .asSomeError
-    token <- ZIO.when(isValid)(jwtService.generate(JwtClaims(login.id))).some
+    token <- ZIO.when(isValid)(jwtService.generate(UserInfo(login.id))).some
   yield TokenResponse(token)).unsome
 
   override def register(register: RegisterRequest): Task[UserIdResponse] = for

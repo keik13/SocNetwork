@@ -3,9 +3,13 @@ package ru.socnetwork.server
 import ru.socnetwork.api.{
   ErrorResponse,
   LoginRequest,
+  PostCreateRequest,
+  PostResponse,
+  PostUpdateRequest,
   RegisterRequest,
   TokenResponse,
-  User
+  User,
+  UserInfo
 }
 import ru.socnetwork.db.DbMigrator
 import ru.socnetwork.server.SocNetworkServer.{
@@ -13,7 +17,12 @@ import ru.socnetwork.server.SocNetworkServer.{
   parseBody,
   searchParams
 }
-import ru.socnetwork.service.{CsvImport, UserService}
+import ru.socnetwork.service.{
+  CsvImport,
+  FriendshipService,
+  PostService,
+  UserService
+}
 import ru.socnetwork.util.{InvalidBody, InvalidToken, MissingParams}
 import zio.http.*
 import zio.json.{EncoderOps, JsonDecoder, JsonEncoder}
@@ -23,11 +32,14 @@ import java.util.UUID
 
 final case class SocNetworkServer(
     userService: UserService,
+    friendshipService: FriendshipService,
+    postService: PostService,
     importCsv: CsvImport,
-    migrator: DbMigrator
+    migrator: DbMigrator,
+    authMiddleware: AuthMiddleware
 ):
 
-  private val antifraudCustomRoutes =
+  private val userRoutes =
     Routes(
       Method.POST / "login" -> handler { (req: Request) =>
         for
@@ -49,7 +61,12 @@ final case class SocNetworkServer(
       Method.GET / "user" / "search" -> handler { (req: Request) =>
         for
           fullName <- ZIO
-            .fromOption(searchParams(req))
+            .fromOption(
+              searchParams(
+                req.queryParam("first_name"),
+                req.queryParam("last_name")
+              )
+            )
             .orElseFail(MissingParams)
           r <- userService.search(fullName._1, fullName._2)
         yield Response.json(r.toJson)
@@ -58,20 +75,90 @@ final case class SocNetworkServer(
         for _ <- importCsv.importCsv()
         yield Response.ok
       }
-    ).handleErrorZIO {
-      case InvalidBody | InvalidToken | MissingParams =>
-        ZIO.succeed(Response.badRequest)
-      case err: Throwable =>
-        ZIO
-          .logError(err.getMessage)
-          .as(
-            Response
-              .json(ErrorResponse(err.getMessage, "", 0).toJson)
-              .status(Status.InternalServerError)
-          )
-    }
+    )
 
-  private val app: Routes[Any, Nothing] = antifraudCustomRoutes
+  private val friendRoutes =
+    Routes(
+      Method.PUT / "friend" / "set" / uuid("userId") -> handler {
+        (userId: UUID, req: Request) =>
+          withContext { (user: UserInfo) =>
+            for r <- friendshipService.add(user.userId, userId)
+            yield Response.ok
+          }
+      },
+      Method.PUT / "friend" / "delete" / uuid("userId") -> handler {
+        (userId: UUID, req: Request) =>
+          withContext { (user: UserInfo) =>
+            for r <- friendshipService.delete(user.userId, userId)
+            yield Response.ok
+          }
+      }
+    )
+
+  private val postRoutes =
+    Routes(
+      Method.POST / "post" / "create" -> handler { (req: Request) =>
+        withContext { (user: UserInfo) =>
+          for
+            e <- parseBody[PostCreateRequest](req)
+            r <- postService.add(e, user.userId)
+          yield Response.json(r.toJson)
+        }
+      },
+      Method.PUT / "post" / "update" -> handler { (req: Request) =>
+        withContext { (user: UserInfo) =>
+          for
+            e <- parseBody[PostUpdateRequest](req)
+            r <- postService.update(e, user.userId)
+          yield Response.ok
+        }
+      },
+      Method.PUT / "post" / "delete" / uuid("id") -> handler {
+        (id: UUID, req: Request) =>
+          withContext { (user: UserInfo) =>
+            for r <- postService.delete(id, user.userId)
+            yield Response.ok
+          }
+      },
+      Method.GET / "post" / "get" / uuid("id") -> handler {
+        (id: UUID, req: Request) =>
+          withContext { (user: UserInfo) =>
+            for r <- postService.getById(id)
+            yield fromOption[PostResponse](r)
+          }
+      },
+      Method.GET / "post" / "feed" -> handler { (req: Request) =>
+        withContext { (user: UserInfo) =>
+          for
+            offsetLimit <- ZIO
+              .fromOption(
+                searchParams(
+                  req.queryParam("offset"),
+                  req.queryParam("limit")
+                )
+              )
+              .map(ol => (ol._1.toInt, ol._2.toInt))
+              .orElseSucceed((0, 10))
+            r <- postService.feed(offsetLimit._1, offsetLimit._2, user.userId)
+          yield Response.json(r.toJson)
+        }
+      }
+    )
+
+  private val app =
+    (userRoutes ++ (postRoutes ++ friendRoutes) @@ authMiddleware.jwtAuthentication)
+      .handleErrorZIO {
+        case InvalidBody | InvalidToken | MissingParams =>
+          ZIO.succeed(Response.badRequest)
+        case err: Throwable =>
+          ZIO
+            .logError(err.getMessage)
+            .as(
+              Response
+                .json(ErrorResponse(err.getMessage, "", 0).toJson)
+                .status(Status.InternalServerError)
+            )
+      }
 
   private def run: ZIO[Any, Throwable, Nothing] = Server
     .serve(app)
@@ -85,8 +172,15 @@ final case class SocNetworkServer(
     yield ()
 
 object SocNetworkServer:
-  val layer
-      : URLayer[UserService with DbMigrator with CsvImport, SocNetworkServer] =
+  val layer: URLayer[
+    UserService
+      with DbMigrator
+      with CsvImport
+      with FriendshipService
+      with PostService
+      with AuthMiddleware,
+    SocNetworkServer
+  ] =
     ZLayer.fromFunction(SocNetworkServer.apply _)
 
   def parseBody[A: JsonDecoder](request: Request): IO[InvalidBody.type, A] =
@@ -100,7 +194,10 @@ object SocNetworkServer:
       case Some(value) => Response.json(value.toJson)
       case None        => Response.notFound
 
-  def searchParams(req: Request): Option[(String, String)] =
-    (req.queryParam("first_name"), req.queryParam("last_name")) match
+  def searchParams(
+      firstParam: Option[String],
+      secondParam: Option[String]
+  ): Option[(String, String)] =
+    (firstParam, secondParam) match
       case (Some(fn), Some(ln)) => Some((fn, ln))
       case _                    => None

@@ -1,18 +1,16 @@
 package ru.socnetwork.conf
 
-import zio.Config.Error.InvalidData
-import zio.config.magnolia.{deriveConfig, DeriveConfig}
-import zio.http.URL
+import zio.config.magnolia.{DeriveConfig, deriveConfig}
+import zio.redis.RedisConfig
 import zio.{Config, Layer, ZLayer}
-
-import scala.concurrent.duration.FiniteDuration
 
 final case class RootConfig(
     config: AppConfig
 )
 final case class AppConfig(
     db: DbConfig,
-    jwt: JwtConfig
+    jwt: JwtConfig,
+    redis: RedisConfig
 )
 
 final case class DbConfig(
@@ -31,7 +29,7 @@ final case class JwtConfig(
 object Configuration:
   import zio.config.typesafe.*
 
-  val layer: Layer[Config.Error, DbConfig with JwtConfig] =
+  val layer: Layer[Config.Error, DbConfig with JwtConfig with RedisConfig] =
     for
       appConfig <- ZLayer.fromZIO(
         TypesafeConfigProvider
@@ -39,5 +37,7 @@ object Configuration:
           .load(deriveConfig[RootConfig])
           .map(_.config)
       )
-      l <- ZLayer.succeed(appConfig.get.db) ++ ZLayer.succeed(appConfig.get.jwt)
+      l <- ZLayer.succeed(appConfig.get.db) ++
+        ZLayer.succeed(appConfig.get.jwt) ++
+        ZLayer.succeed(appConfig.get.redis)
     yield l

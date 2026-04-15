@@ -1,6 +1,7 @@
 package ru.socnetwork.api
 
 import zio.json.*
+import zio.schema.{Schema, derived}
 
 import java.time.LocalDate
 import java.util.UUID
@@ -38,4 +39,15 @@ final case class User(
 final case class ErrorResponse(message: String, requestId: String, code: Int)
     derives JsonEncoder
 
-final case class JwtClaims(userId: UUID) derives JsonCodec
+final case class UserInfo(userId: UUID) derives JsonCodec
+
+@jsonMemberNames(SnakeCase)
+final case class PostCreateRequest(text: String) derives JsonDecoder
+
+@jsonMemberNames(SnakeCase)
+final case class PostUpdateRequest(id: UUID, text: String) derives JsonDecoder
+
+@jsonMemberNames(SnakeCase)
+final case class PostResponse(id: UUID, text: String, authorUserId: UUID)
+    derives JsonEncoder,
+      Schema

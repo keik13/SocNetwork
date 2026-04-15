@@ -1,8 +1,11 @@
 package ru.socnetwork.containers
 
-import zio.{ULayer, ZIO, ZLayer}
+import com.redis.testcontainers.RedisContainer
+import zio.{Duration, ULayer, ZIO, ZLayer}
 import org.testcontainers.containers.PostgreSQLContainer
+import org.testcontainers.utility.DockerImageName
 import ru.socnetwork.conf.DbConfig
+import zio.redis.{Redis, RedisConfig}
 
 object Containers:
 
@@ -23,3 +26,19 @@ object Containers:
         password = container.getPassword
       yield DbConfig(jdbcUrl, jdbcUrl, username, password)
     }
+
+  val redisLayer: ZLayer[Any, Throwable, RedisConfig] = ZLayer.scoped {
+    for
+      container <- ZIO.acquireRelease(
+        ZIO.attemptBlocking {
+          val c =
+            new RedisContainer(DockerImageName.parse("redis:8-alpine"))
+          c.withStartupTimeout(Duration.fromSeconds(120)).start()
+          c
+        }
+      )(c => ZIO.attemptBlocking(c.stop()).orDie)
+
+      host = container.getHost
+      port = container.getFirstMappedPort
+    yield RedisConfig(host, port)
+  }

@@ -94,6 +94,249 @@
       "response": []
     },
     {
+      "name": "localhost:8080/friend/set/{userId}",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJTb2NOZXR3b3JrIiwiZXhwIjoxNzc2MTkwNDA1LCJpYXQiOjE3NzYxODY4MDUsInVzZXJJZCI6IjUyNzIxNWFkLTM0ZGMtNDQzZS1hYzM3LTI2MjNjZDc3Mjg4YiJ9.EP4zTgO_vWKMpLfYtyhOo7VE3cFH_iE4H4iVTLijzKw",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "localhost:8080/friend/set/000edd43-06f6-46b0-9532-381cb371c44e",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "friend",
+            "set",
+            "000edd43-06f6-46b0-9532-381cb371c44e"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "localhost:8080/friend/delete/{userId}",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJTb2NOZXR3b3JrIiwiZXhwIjoxNzc2MTkwNDA1LCJpYXQiOjE3NzYxODY4MDUsInVzZXJJZCI6IjUyNzIxNWFkLTM0ZGMtNDQzZS1hYzM3LTI2MjNjZDc3Mjg4YiJ9.EP4zTgO_vWKMpLfYtyhOo7VE3cFH_iE4H4iVTLijzKw",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "localhost:8080/friend/delete/000edd43-06f6-46b0-9532-381cb371c44e",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "friend",
+            "delete",
+            "000edd43-06f6-46b0-9532-381cb371c44e"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "localhost:8080/post/create",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJTb2NOZXR3b3JrIiwiZXhwIjoxNzc2MTkwNDA1LCJpYXQiOjE3NzYxODY4MDUsInVzZXJJZCI6IjUyNzIxNWFkLTM0ZGMtNDQzZS1hYzM3LTI2MjNjZDc3Mjg4YiJ9.EP4zTgO_vWKMpLfYtyhOo7VE3cFH_iE4H4iVTLijzKw",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"text\": \"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Lectus mauris ultrices eros in cursus turpis massa.\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "localhost:8080/post/create",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "post",
+            "create"
+          ],
+          "query": [
+            {
+              "key": "",
+              "value": null,
+              "type": "text",
+              "disabled": true
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "localhost:8080/post/get/{postId}",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJTb2NOZXR3b3JrIiwiZXhwIjoxNzc2MTkwNDA1LCJpYXQiOjE3NzYxODY4MDUsInVzZXJJZCI6IjUyNzIxNWFkLTM0ZGMtNDQzZS1hYzM3LTI2MjNjZDc3Mjg4YiJ9.EP4zTgO_vWKMpLfYtyhOo7VE3cFH_iE4H4iVTLijzKw",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "localhost:8080/post/get/d07f9517-c7c4-4992-a177-93eeded71d80",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "post",
+            "get",
+            "d07f9517-c7c4-4992-a177-93eeded71d80"
+          ],
+          "query": [
+            {
+              "key": "",
+              "value": null,
+              "type": "text",
+              "disabled": true
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "localhost:8080/post/delete/{postId}",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJTb2NOZXR3b3JrIiwiZXhwIjoxNzc2MTkwNDA1LCJpYXQiOjE3NzYxODY4MDUsInVzZXJJZCI6IjUyNzIxNWFkLTM0ZGMtNDQzZS1hYzM3LTI2MjNjZDc3Mjg4YiJ9.EP4zTgO_vWKMpLfYtyhOo7VE3cFH_iE4H4iVTLijzKw",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "localhost:8080/post/delete/d07f9517-c7c4-4992-a177-93eeded71d80",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "post",
+            "delete",
+            "d07f9517-c7c4-4992-a177-93eeded71d80"
+          ],
+          "query": [
+            {
+              "key": "",
+              "value": null,
+              "type": "text",
+              "disabled": true
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "localhost:8080/post/update",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJTb2NOZXR3b3JrIiwiZXhwIjoxNzc2MTkwNDA1LCJpYXQiOjE3NzYxODY4MDUsInVzZXJJZCI6IjUyNzIxNWFkLTM0ZGMtNDQzZS1hYzM3LTI2MjNjZDc3Mjg4YiJ9.EP4zTgO_vWKMpLfYtyhOo7VE3cFH_iE4H4iVTLijzKw",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id\": \"d07f9517-c7c4-4992-a177-93eeded71d80\",\n  \"text\": \"Lorem ipsum dolor sit amet.\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "localhost:8080/post/update",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "post",
+            "update"
+          ],
+          "query": [
+            {
+              "key": "",
+              "value": null,
+              "type": "text",
+              "disabled": true
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
       "name": "localhost:8080/user/search",
       "protocolProfileBehavior": {
         "disableBodyPruning": true
@@ -111,7 +354,7 @@
           }
         },
         "url": {
-          "raw": "localhost:8080/user/search?first_name&last_name",
+          "raw": "localhost:8080/user/search?first_name&last_name=Абр",
           "host": [
             "localhost"
           ],
@@ -123,14 +366,40 @@
           "query": [
             {
               "key": "first_name",
-              "value": null,
-              "type": "text"
+              "value": null
             },
             {
               "key": "last_name",
-              "value": null,
-              "type": "text"
+              "value": "Абр"
             }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "localhost:8080/user/import",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "localhost:8080/user/import",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "user",
+            "import"
           ]
         }
       },

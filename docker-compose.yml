@@ -14,6 +14,14 @@ services:
       - "8080:8080"
     image: socnetwork:latest
     environment:
-      DB_URL: "jdbc:postgresql://postgres:5432/soc_network"
+      DB_URL_MASTER: "jdbc:postgresql://postgres:5432/soc_network"
+      DB_URL_SLAVE: "jdbc:postgresql://postgres:5432/soc_network"
+      REDIS_HOST: "redis"
     depends_on:
       - postgres
+      - redis
+
+  redis:
+    ports:
+      - "6379:6379"
+    image: "redis:8-alpine"
