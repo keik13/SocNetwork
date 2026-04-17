@@ -23,6 +23,16 @@ final case class PostStorageLive(db: DbStrategy) extends PostStorage:
     querySchema[PostRow](entity = "post")
   )
 
+  private inline def queryFriendship = quote(
+    querySchema[FriendshipRow](entity = "friendship")
+  )
+
+  private inline def queryPostFriendship(userId: UUID) = quote(
+    queryPost
+      .join(queryFriendship)
+      .on((p, f) => p.userId == f.friendId && f.userId == lift(userId))
+  )
+
   override def add(postRow: PostRow): Task[Unit] =
     db.write(queryPost.insertValue(lift(postRow))).unit
 
@@ -48,6 +58,15 @@ final case class PostStorageLive(db: DbStrategy) extends PostStorage:
       queryPost.filter(_.id == lift(id)).filter(_.userId == lift(userId)).delete
     )
     .unit
+
+  override def getFriendPosts(count: Index, userId: UUID): Task[List[PostRow]] =
+    db
+      .read(
+        queryPostFriendship(userId)
+          .sortBy(_._1.updatedAt)(Ord.desc)
+          .take(lift(count))
+      )
+      .map(_.map(_._1))
 
 object PostStorageLive:
   val layer: URLayer[DbStrategy, PostStorage] =

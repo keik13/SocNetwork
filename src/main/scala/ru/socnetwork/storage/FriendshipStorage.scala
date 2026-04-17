@@ -12,4 +12,8 @@ trait FriendshipStorage:
 
   def getFriends(userId: UUID): Task[List[UUID]]
 
+  def getAllFriends: Task[List[UUID]]
+
   def getFollowers(userId: UUID): Task[List[UUID]]
+
+  def getAllFollowers: Task[List[UUID]]

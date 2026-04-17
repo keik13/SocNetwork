@@ -15,4 +15,4 @@ trait PostService:
 
   def delete(id: UUID, userId: UUID): Task[Unit]
 
-  def feed(offset: Int, limit: Int, userId: UUID): Task[Chunk[PostResponse]]
+  def getFriendPosts(count: Int, userId: UUID): Task[List[PostResponse]]

@@ -4,14 +4,17 @@ import ru.socnetwork.api.RegisterRequest
 import ru.socnetwork.conf.{Configuration, JwtConfig}
 import ru.socnetwork.containers.{Containers, DbMigrationAspect}
 import ru.socnetwork.db.{Db, DbStrategy}
+import ru.socnetwork.service.PostServiceSpec.ProtobufCodecSupplier
 import ru.socnetwork.storage.{
   FriendshipStorageLive,
+  PostStorageLive,
   UserStorage,
   UserStorageLive
 }
+import zio.redis.{CodecSupplier, Redis}
 import zio.test.*
 import zio.test.TestAspect.sequential
-import zio.{ZEnvironment, ZIO}
+import zio.{ZEnvironment, ZIO, ZLayer}
 
 import java.time.LocalDate
 
@@ -45,9 +48,12 @@ object FriendServiceSpec extends ZIOSpecDefault:
     .provideShared(
       UserServiceLive.layer,
       UserStorageLive.layer,
-      FriendshipServiceLive.layer,
       FriendshipStorageLive.layer,
+      FriendshipServiceLive.layer,
       PasswordServiceLive.layer,
+      RebuildCacheServiceLive.layer,
+      PostStorageLive.layer,
+      CacheServiceLive.layer,
       JwtServiceLive.layer,
       Configuration.layer.map(c => ZEnvironment(c.get[JwtConfig])),
       Containers.layer,
@@ -55,7 +61,10 @@ object FriendServiceSpec extends ZIOSpecDefault:
       Db.quillMasterLayer,
       Db.quillSlaveLayer,
       DbStrategy.layer,
-      Containers.postgresLayer
+      Containers.postgresLayer,
+      Containers.redisLayer,
+      ZLayer.succeed[CodecSupplier](ProtobufCodecSupplier),
+      Redis.singleNode
     ) @@ sequential
 
   val user = RegisterRequest(

@@ -110,8 +110,8 @@ object PostServiceSpec extends ZIOSpecDefault:
             ),
             user1.userId
           )
-          feedUser1 <- postService.feed(0, 10, user1.userId)
-          feedFriend <- postService.feed(0, 10, friend.userId)
+          feedUser1 <- postService.getFriendPosts(10, user1.userId)
+          feedFriend <- postService.getFriendPosts(10, friend.userId)
         yield assertTrue(feedUser1.size == 2 && feedFriend.isEmpty)
       }
     ) @@ DbMigrationAspect.migrateOnce()() @@ TestAspect.after(
@@ -123,6 +123,8 @@ object PostServiceSpec extends ZIOSpecDefault:
       UserStorageLive.layer,
       PostServiceLive.layer,
       PostStorageLive.layer,
+      CacheServiceLive.layer,
+      RebuildCacheServiceLive.layer,
       FriendshipServiceLive.layer,
       FriendshipStorageLive.layer,
       PasswordServiceLive.layer,

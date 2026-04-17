@@ -13,3 +13,5 @@ trait PostStorage:
   def getById(id: UUID): Task[Option[PostRow]]
 
   def delete(id: UUID, userId: UUID): Task[Unit]
+
+  def getFriendPosts(count: Int, userId: UUID): Task[List[PostRow]]

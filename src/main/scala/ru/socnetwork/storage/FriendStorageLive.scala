@@ -33,11 +33,17 @@ final case class FriendshipStorageLive(db: DbStrategy)
         .delete
     ).unit
 
-  def getFriends(userId: UUID): Task[List[UUID]] =
+  override def getFriends(userId: UUID): Task[List[UUID]] =
     db.read(queryFriendship.filter(_.userId == lift(userId)).map(_.friendId))
+
+  override def getAllFriends: Task[List[UUID]] =
+    db.read(queryFriendship.map(_.friendId).distinct)
 
   override def getFollowers(userId: UUID): Task[List[UUID]] =
     db.read(queryFriendship.filter(_.friendId == lift(userId)).map(_.userId))
+
+  override def getAllFollowers: Task[List[UUID]] =
+    db.read(queryFriendship.map(_.userId).distinct)
 
 object FriendshipStorageLive:
   val layer: URLayer[DbStrategy, FriendshipStorage] =

@@ -10,8 +10,9 @@ import scala.concurrent.duration.SECONDS
 
 final case class PostServiceLive(
     postStorage: PostStorage,
-    friendshipStorage: FriendshipStorage,
-    redis: Redis
+    friendshipService: FriendshipService,
+    cacheService: CacheService,
+    rebuildCacheService: RebuildCacheService
 ) extends PostService:
 
   override def add(request: PostCreateRequest, userId: UUID): Task[UUID] =
@@ -19,27 +20,16 @@ final case class PostServiceLive(
       ct <- Clock.currentTime(SECONDS)
       uuid <- Random.nextUUID
       _ <- postStorage.add(PostRow(uuid, userId, request.text, ct, ct))
-      _ <- updateCache(request.text, userId, uuid)
+      followerIds <- friendshipService.getFollowers(userId)
+      _ <- cacheService.updateCache(request.text, userId, uuid, followerIds)
     yield uuid
-
-  private def updateCache(text: String, userId: UUID, uuid: UUID) =
-    for
-      friendIds <- friendshipStorage.getFollowers(userId)
-      _ <- ZIO.foreachParDiscard(friendIds) { friendId =>
-        redis
-          .lPush(
-            s"feed:user:$friendId",
-            PostResponse(uuid, text, userId)
-          )
-          *> redis.lTrim(s"feed:user:$friendId", 0 until 1000)
-      }
-    yield ()
 
   override def update(update: PostUpdateRequest, userId: UUID): Task[Unit] =
     for
       ct <- Clock.currentTime(SECONDS)
       _ <- postStorage.update(update.id, update.text, userId, ct)
-      _ <- updateCache(update.text, userId, update.id)
+      followerIds <- friendshipService.getFollowers(userId)
+      _ <- cacheService.updateCache(update.text, userId, update.id, followerIds)
     yield ()
 
   override def getById(id: UUID): Task[Option[PostResponse]] =
@@ -47,17 +37,21 @@ final case class PostServiceLive(
     yield PostResponse(row.id, row.message, row.userId)).unsome
 
   override def delete(id: UUID, userId: UUID): Task[Unit] =
-    postStorage.delete(id, userId)
+    for
+      _ <- postStorage.delete(id, userId)
+      _ <- rebuildCacheService.rebuildFollowerCache(userId)
+    yield ()
 
-  override def feed(
-      offset: Int,
-      limit: Int,
+  override def getFriendPosts(
+      count: Int,
       userId: UUID
-  ): Task[Chunk[PostResponse]] =
-    redis
-      .lRange(s"feed:user:$userId", Range(offset, limit))
-      .returning[PostResponse]
+  ): Task[List[PostResponse]] = postStorage
+    .getFriendPosts(count, userId)
+    .map(pr => pr.map(p => PostResponse(p.id, p.message, p.userId)))
 
 object PostServiceLive:
-  val layer: URLayer[PostStorage & Redis & FriendshipStorage, PostService] =
+  val layer: URLayer[
+    PostStorage & CacheService & FriendshipService & RebuildCacheService,
+    PostService
+  ] =
     ZLayer.fromFunction(PostServiceLive.apply _)

@@ -1,16 +1,18 @@
 package ru.socnetwork.populate
 
 import ru.socnetwork.api.PostCreateRequest
-import ru.socnetwork.conf.Configuration
-import ru.socnetwork.containers.DbMigrationAspect
+import ru.socnetwork.conf.{Configuration, JwtConfig}
+import ru.socnetwork.containers.{Containers, DbMigrationAspect}
 import ru.socnetwork.db.{Db, DbStrategy}
 import ru.socnetwork.service.{
+  CacheServiceLive,
   FriendshipService,
   FriendshipServiceLive,
   JwtServiceLive,
   PasswordServiceLive,
   PostService,
   PostServiceLive,
+  RebuildCacheServiceLive,
   UserService,
   UserServiceLive
 }
@@ -26,7 +28,7 @@ import zio.schema.codec.{BinaryCodec, ProtobufCodec}
 import zio.stream.{ZPipeline, ZStream}
 import zio.test.*
 import zio.test.TestAspect.{ignore, sequential}
-import zio.{ZIO, ZLayer}
+import zio.{ZEnvironment, ZIO, ZLayer}
 
 import java.util.UUID
 
@@ -64,7 +66,7 @@ object PostImportSpec extends ZIOSpecDefault:
             )
         yield assertTrue(true)
       }
-    ) @@ DbMigrationAspect.migrateOnce()()  @@ ignore
+    ) @@ DbMigrationAspect.migrateOnce()() @@ ignore
   }
     .provideShared(
       UserServiceLive.layer,
@@ -73,9 +75,14 @@ object PostImportSpec extends ZIOSpecDefault:
       PostStorageLive.layer,
       FriendshipServiceLive.layer,
       FriendshipStorageLive.layer,
+      CacheServiceLive.layer,
+      RebuildCacheServiceLive.layer,
       PasswordServiceLive.layer,
       JwtServiceLive.layer,
-      Configuration.layer,
+      Configuration.layer.map(c => ZEnvironment(c.get[JwtConfig])),
+      Containers.layer,
+      Containers.postgresLayer,
+      Containers.redisLayer,
       Db.dataSourceLayer,
       Db.quillMasterLayer,
       Db.quillSlaveLayer,

@@ -18,9 +18,11 @@ import ru.socnetwork.server.SocNetworkServer.{
   searchParams
 }
 import ru.socnetwork.service.{
+  CacheService,
   CsvImport,
   FriendshipService,
   PostService,
+  RebuildCacheService,
   UserService
 }
 import ru.socnetwork.util.{InvalidBody, InvalidToken, MissingParams}
@@ -34,6 +36,8 @@ final case class SocNetworkServer(
     userService: UserService,
     friendshipService: FriendshipService,
     postService: PostService,
+    cacheService: CacheService,
+    rebuildCacheService: RebuildCacheService,
     importCsv: CsvImport,
     migrator: DbMigrator,
     authMiddleware: AuthMiddleware
@@ -139,14 +143,22 @@ final case class SocNetworkServer(
               )
               .map(ol => (ol._1.toInt, ol._2.toInt))
               .orElseSucceed((0, 10))
-            r <- postService.feed(offsetLimit._1, offsetLimit._2, user.userId)
+            r <- cacheService.feed(offsetLimit._1, offsetLimit._2, user.userId)
           yield Response.json(r.toJson)
         }
       }
     )
 
+  private val adminRoutes =
+    Routes(
+      Method.POST / "post" / "feed" / "rebuild" -> handler { (req: Request) =>
+        for r <- rebuildCacheService.rebuildAllFollowerCache()
+        yield Response.ok
+      }
+    )
+
   private val app =
-    (userRoutes ++ (postRoutes ++ friendRoutes) @@ authMiddleware.jwtAuthentication)
+    (adminRoutes ++ userRoutes ++ (postRoutes ++ friendRoutes) @@ authMiddleware.jwtAuthentication)
       .handleErrorZIO {
         case InvalidBody | InvalidToken | MissingParams =>
           ZIO.succeed(Response.badRequest)
@@ -178,6 +190,8 @@ object SocNetworkServer:
       with CsvImport
       with FriendshipService
       with PostService
+      with CacheService
+      with RebuildCacheService
       with AuthMiddleware,
     SocNetworkServer
   ] =

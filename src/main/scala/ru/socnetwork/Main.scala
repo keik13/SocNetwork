@@ -4,11 +4,13 @@ import ru.socnetwork.conf.Configuration
 import ru.socnetwork.db.{Db, DbMigrator, DbStrategy}
 import ru.socnetwork.server.{AuthMiddleware, SocNetworkServer}
 import ru.socnetwork.service.{
+  CacheServiceLive,
   CsvImportLive,
   FriendshipServiceLive,
   JwtServiceLive,
   PasswordServiceLive,
   PostServiceLive,
+  RebuildCacheServiceLive,
   UserServiceLive
 }
 import ru.socnetwork.storage.{
@@ -46,6 +48,8 @@ object Main extends ZIOAppDefault:
         FriendshipStorageLive.layer,
         PostServiceLive.layer,
         PostStorageLive.layer,
+        CacheServiceLive.layer,
+        RebuildCacheServiceLive.layer,
         AuthMiddleware.layer,
         Redis.singleNode,
         ZLayer.succeed[CodecSupplier](ProtobufCodecSupplier)
