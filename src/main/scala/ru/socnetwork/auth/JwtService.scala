@@ -1,6 +1,5 @@
-package ru.socnetwork.service
+package ru.socnetwork.auth
 
-import ru.socnetwork.api.UserInfo
 import zio.*
 
 trait JwtService:

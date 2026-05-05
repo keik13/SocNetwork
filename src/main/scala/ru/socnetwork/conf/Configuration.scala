@@ -2,7 +2,7 @@ package ru.socnetwork.conf
 
 import zio.config.magnolia.{DeriveConfig, deriveConfig}
 import zio.redis.RedisConfig
-import zio.{Config, Layer, ZLayer}
+import zio.{Config, Duration, Layer, ZLayer}
 
 final case class RootConfig(
     config: AppConfig
@@ -10,7 +10,9 @@ final case class RootConfig(
 final case class AppConfig(
     db: DbConfig,
     jwt: JwtConfig,
-    redis: RedisConfig
+    redis: RedisConfig,
+    consumerConfig: ConsumerConfig,
+    producerConfig: ProducerConfig
 )
 
 final case class DbConfig(
@@ -26,10 +28,36 @@ final case class JwtConfig(
     expireInSeconds: Int
 )
 
+final case class ConsumerConfig(
+    topic: String,
+    groupId: String,
+    bootstrapServers: String,
+    securityProtocol: String,
+    enableAutoCommit: String,
+    autoOffsetReset: String
+)
+
+final case class ProducerConfig(
+    topic: String,
+    bootstrapServers: String,
+    securityProtocol: String,
+    retries: Int,
+    maxBlock: Duration,
+    deliveryTimeout: Duration,
+    requestTimeout: Duration
+)
+
 object Configuration:
   import zio.config.typesafe.*
 
-  val layer: Layer[Config.Error, DbConfig with JwtConfig with RedisConfig] =
+  val layer: Layer[
+    Config.Error,
+    DbConfig
+      with JwtConfig
+      with RedisConfig
+      with ConsumerConfig
+      with ProducerConfig
+  ] =
     for
       appConfig <- ZLayer.fromZIO(
         TypesafeConfigProvider
@@ -39,5 +67,7 @@ object Configuration:
       )
       l <- ZLayer.succeed(appConfig.get.db) ++
         ZLayer.succeed(appConfig.get.jwt) ++
-        ZLayer.succeed(appConfig.get.redis)
+        ZLayer.succeed(appConfig.get.redis) ++
+        ZLayer.succeed(appConfig.get.consumerConfig) ++
+        ZLayer.succeed(appConfig.get.producerConfig)
     yield l

@@ -1,7 +1,6 @@
-package ru.socnetwork.service
+package ru.socnetwork.auth
 
 import pdi.jwt.{JwtAlgorithm, JwtClaim, JwtZIOJson}
-import ru.socnetwork.api.UserInfo
 import ru.socnetwork.conf.JwtConfig
 import ru.socnetwork.util.InvalidToken
 import zio.json.{DecoderOps, EncoderOps}

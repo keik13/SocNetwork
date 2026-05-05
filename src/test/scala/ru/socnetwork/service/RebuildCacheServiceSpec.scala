@@ -1,9 +1,11 @@
 package ru.socnetwork.service
 
 import ru.socnetwork.api.{PostCreateRequest, RegisterRequest}
+import ru.socnetwork.auth.JwtServiceLive
 import ru.socnetwork.conf.{Configuration, JwtConfig}
 import ru.socnetwork.containers.{Containers, DbMigrationAspect}
 import ru.socnetwork.db.{Db, DbStrategy}
+import ru.socnetwork.mock.KafkaProducerTest
 import ru.socnetwork.storage.{
   FriendshipStorageLive,
   PostStorageLive,
@@ -173,7 +175,8 @@ object RebuildCacheServiceSpec extends ZIOSpecDefault:
       Containers.postgresLayer,
       Containers.redisLayer,
       ZLayer.succeed[CodecSupplier](ProtobufCodecSupplier),
-      Redis.singleNode
+      Redis.singleNode,
+      KafkaProducerTest.layer
     ) @@ sequential
 
   val user = RegisterRequest(

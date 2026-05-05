@@ -1,13 +1,13 @@
 package ru.socnetwork.service
 
 import ru.socnetwork.api.{
-  UserInfo,
   LoginRequest,
   RegisterRequest,
   TokenResponse,
   User,
   UserIdResponse
 }
+import ru.socnetwork.auth.{JwtService, UserInfo}
 import ru.socnetwork.service.UserServiceLive.toUser
 import ru.socnetwork.storage.{UserRow, UserStorage}
 import zio.{Random, Task, URLayer, ZIO, ZLayer}

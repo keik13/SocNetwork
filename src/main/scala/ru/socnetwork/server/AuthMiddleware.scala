@@ -1,7 +1,6 @@
 package ru.socnetwork.server
 
-import ru.socnetwork.api.UserInfo
-import ru.socnetwork.service.JwtService
+import ru.socnetwork.auth.{JwtService, UserInfo}
 import zio.*
 import zio.http.*
 

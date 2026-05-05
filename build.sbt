@@ -5,6 +5,7 @@ ThisBuild / scalafmtOnCompile := true
 lazy val root = (project in file("."))
   .settings(
     name := "SocNetwork",
+    assembly / mainClass := Some("ru.socnetwork.Main"),
     assemblyJarName := s"${name.value}-${version.value}.jar",
     assembly / assemblyOutputPath := file(s"target/${assemblyJarName.value}"),
     assembly / assemblyMergeStrategy := {
@@ -30,10 +31,11 @@ lazy val root = (project in file("."))
       "dev.zio" %% "zio-config-magnolia" % "4.0.7",
       "dev.zio" %% "zio-logging" % "2.5.3",
       "dev.zio" %% "zio-redis" % "1.2.1",
+      "dev.zio" %% "zio-kafka" % "3.3.0",
       "io.getquill" %% "quill-jdbc-zio" % "4.8.6",
       "com.github.jwt-scala" %% "jwt-zio-json" % "11.0.4",
       "com.password4j" % "password4j" % "1.8.4",
-      "org.postgresql" % "postgresql" % "42.7.10",
+      "org.postgresql" % "postgresql" % "42.7.11",
       "org.flywaydb" % "flyway-core" % "9.22.3",
       "dev.zio" %% "zio-test" % "2.1.25" % Test,
       "dev.zio" %% "zio-test-sbt" % "2.1.25" % Test,

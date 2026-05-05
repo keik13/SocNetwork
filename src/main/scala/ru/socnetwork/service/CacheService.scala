@@ -8,9 +8,7 @@ import java.util.UUID
 trait CacheService:
 
   def updateCache(
-      text: String,
-      userId: UUID,
-      uuid: UUID,
+      postResp: PostResponse,
       followerIds: List[UUID]
   ): Task[Unit]
 

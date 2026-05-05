@@ -1,14 +1,15 @@
 package ru.socnetwork.populate
 
 import ru.socnetwork.api.PostCreateRequest
+import ru.socnetwork.auth.JwtServiceLive
 import ru.socnetwork.conf.{Configuration, JwtConfig}
 import ru.socnetwork.containers.{Containers, DbMigrationAspect}
 import ru.socnetwork.db.{Db, DbStrategy}
+import ru.socnetwork.mock.KafkaProducerTest
 import ru.socnetwork.service.{
   CacheServiceLive,
   FriendshipService,
   FriendshipServiceLive,
-  JwtServiceLive,
   PasswordServiceLive,
   PostService,
   PostServiceLive,
@@ -88,5 +89,6 @@ object PostImportSpec extends ZIOSpecDefault:
       Db.quillSlaveLayer,
       DbStrategy.layer,
       ZLayer.succeed[CodecSupplier](ProtobufCodecSupplier),
-      Redis.singleNode
+      Redis.singleNode,
+      KafkaProducerTest.layer
     ) @@ sequential

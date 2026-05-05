@@ -11,16 +11,14 @@ final case class CacheServiceLive(
 ) extends CacheService:
 
   override def updateCache(
-      text: String,
-      userId: UUID,
-      uuid: UUID,
+      postResp: PostResponse,
       followerIds: List[UUID]
   ): Task[Unit] =
     for _ <- ZIO.foreachParDiscard(followerIds) { followerId =>
         redis
           .lPush(
             s"feed:user:$followerId",
-            PostResponse(uuid, text, userId)
+            postResp
           )
           *> redis.lTrim(s"feed:user:$followerId", 0 until 1000)
       }

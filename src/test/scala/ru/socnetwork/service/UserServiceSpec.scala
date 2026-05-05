@@ -1,6 +1,7 @@
 package ru.socnetwork.service
 
 import ru.socnetwork.api.{LoginRequest, RegisterRequest, User}
+import ru.socnetwork.auth.JwtServiceLive
 import ru.socnetwork.conf.{Configuration, JwtConfig}
 import ru.socnetwork.containers.DbMigrationAspect
 import ru.socnetwork.db.{Db, DbStrategy}

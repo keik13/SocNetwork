@@ -8,10 +8,11 @@ import ru.socnetwork.api.{
   PostUpdateRequest,
   RegisterRequest,
   TokenResponse,
-  User,
-  UserInfo
+  User
 }
+import ru.socnetwork.auth.UserInfo
 import ru.socnetwork.db.DbMigrator
+import ru.socnetwork.kafka.KafkaConsumer
 import ru.socnetwork.server.SocNetworkServer.{
   fromOption,
   parseBody,
@@ -19,6 +20,7 @@ import ru.socnetwork.server.SocNetworkServer.{
 }
 import ru.socnetwork.service.{
   CacheService,
+  ConnectionService,
   CsvImport,
   FriendshipService,
   PostService,
@@ -40,7 +42,9 @@ final case class SocNetworkServer(
     rebuildCacheService: RebuildCacheService,
     importCsv: CsvImport,
     migrator: DbMigrator,
-    authMiddleware: AuthMiddleware
+    authMiddleware: AuthMiddleware,
+    connectionService: ConnectionService,
+    kafkaConsumer: KafkaConsumer
 ):
 
   private val userRoutes =
@@ -149,6 +153,25 @@ final case class SocNetworkServer(
       }
     )
 
+  val socket = Routes(
+    Method.GET / "ws" -> handler(Handler.webSocket { channel =>
+      withContext { (user: UserInfo) =>
+        channel.receiveAll {
+          case ChannelEvent.Read(WebSocketFrame.Text("/post/feed/posted")) =>
+            connectionService.add(userId = user.userId, channel = channel)
+          case ChannelEvent.Read(WebSocketFrame.Text("end")) =>
+            connectionService.remove(
+              userId = user.userId,
+              channel = channel
+            ) *> channel.shutdown
+          case _ =>
+            ZIO.unit
+
+        }
+      }
+    }.toResponse)
+  )
+
   private val adminRoutes =
     Routes(
       Method.POST / "post" / "feed" / "rebuild" -> handler { (req: Request) =>
@@ -158,7 +181,7 @@ final case class SocNetworkServer(
     )
 
   private val app =
-    (adminRoutes ++ userRoutes ++ (postRoutes ++ friendRoutes) @@ authMiddleware.jwtAuthentication)
+    (adminRoutes ++ userRoutes ++ (postRoutes ++ friendRoutes ++ socket) @@ authMiddleware.jwtAuthentication)
       .handleErrorZIO {
         case InvalidBody | InvalidToken | MissingParams =>
           ZIO.succeed(Response.badRequest)
@@ -180,6 +203,7 @@ final case class SocNetworkServer(
   def start: ZIO[Any, Throwable, Unit] =
     for
       _ <- migrator.migrate
+      _ <- kafkaConsumer.consume.runDrain.forkDaemon
       _ <- run
     yield ()
 
@@ -192,7 +216,9 @@ object SocNetworkServer:
       with PostService
       with CacheService
       with RebuildCacheService
-      with AuthMiddleware,
+      with AuthMiddleware
+      with ConnectionService
+      with KafkaConsumer,
     SocNetworkServer
   ] =
     ZLayer.fromFunction(SocNetworkServer.apply _)

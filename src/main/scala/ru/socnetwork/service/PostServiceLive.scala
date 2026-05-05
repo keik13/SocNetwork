@@ -1,9 +1,9 @@
 package ru.socnetwork.service
 
 import ru.socnetwork.api.{PostCreateRequest, PostResponse, PostUpdateRequest}
-import ru.socnetwork.storage.{FriendshipStorage, PostRow, PostStorage}
-import zio.{Chunk, Clock, Random, Task, URLayer, ZIO, ZLayer}
-import zio.redis.*
+import ru.socnetwork.kafka.KafkaProducer
+import ru.socnetwork.storage.{PostRow, PostStorage}
+import zio.{Clock, Random, Task, URLayer, ZIO, ZLayer}
 
 import java.util.UUID
 import scala.concurrent.duration.SECONDS
@@ -12,7 +12,8 @@ final case class PostServiceLive(
     postStorage: PostStorage,
     friendshipService: FriendshipService,
     cacheService: CacheService,
-    rebuildCacheService: RebuildCacheService
+    rebuildCacheService: RebuildCacheService,
+    producer: KafkaProducer
 ) extends PostService:
 
   override def add(request: PostCreateRequest, userId: UUID): Task[UUID] =
@@ -21,7 +22,9 @@ final case class PostServiceLive(
       uuid <- Random.nextUUID
       _ <- postStorage.add(PostRow(uuid, userId, request.text, ct, ct))
       followerIds <- friendshipService.getFollowers(userId)
-      _ <- cacheService.updateCache(request.text, userId, uuid, followerIds)
+      pr <- ZIO.succeed(PostResponse(uuid, request.text, userId))
+      _ <- cacheService.updateCache(pr, followerIds)
+      _ <- producer.produce(pr)
     yield uuid
 
   override def update(update: PostUpdateRequest, userId: UUID): Task[Unit] =
@@ -29,7 +32,9 @@ final case class PostServiceLive(
       ct <- Clock.currentTime(SECONDS)
       _ <- postStorage.update(update.id, update.text, userId, ct)
       followerIds <- friendshipService.getFollowers(userId)
-      _ <- cacheService.updateCache(update.text, userId, update.id, followerIds)
+      pr <- ZIO.succeed(PostResponse(update.id, update.text, userId))
+      _ <- cacheService.updateCache(pr, followerIds)
+      _ <- producer.produce(pr)
     yield ()
 
   override def getById(id: UUID): Task[Option[PostResponse]] =
@@ -51,7 +56,8 @@ final case class PostServiceLive(
 
 object PostServiceLive:
   val layer: URLayer[
-    PostStorage & CacheService & FriendshipService & RebuildCacheService,
+    PostStorage & CacheService & FriendshipService & RebuildCacheService &
+      KafkaProducer,
     PostService
   ] =
     ZLayer.fromFunction(PostServiceLive.apply _)

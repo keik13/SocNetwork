@@ -36,12 +36,6 @@ final case class User(
 ) derives JsonEncoder
 
 @jsonMemberNames(SnakeCase)
-final case class ErrorResponse(message: String, requestId: String, code: Int)
-    derives JsonEncoder
-
-final case class UserInfo(userId: UUID) derives JsonCodec
-
-@jsonMemberNames(SnakeCase)
 final case class PostCreateRequest(text: String) derives JsonDecoder
 
 @jsonMemberNames(SnakeCase)
@@ -49,5 +43,5 @@ final case class PostUpdateRequest(id: UUID, text: String) derives JsonDecoder
 
 @jsonMemberNames(SnakeCase)
 final case class PostResponse(id: UUID, text: String, authorUserId: UUID)
-    derives JsonEncoder,
+    derives JsonCodec,
       Schema
