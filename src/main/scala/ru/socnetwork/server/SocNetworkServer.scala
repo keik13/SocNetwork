@@ -1,6 +1,7 @@
 package ru.socnetwork.server
 
 import ru.socnetwork.api.{
+  DialogMessageText,
   ErrorResponse,
   LoginRequest,
   PostCreateRequest,
@@ -13,6 +14,7 @@ import ru.socnetwork.api.{
 import ru.socnetwork.auth.UserInfo
 import ru.socnetwork.db.DbMigrator
 import ru.socnetwork.kafka.KafkaConsumer
+import ru.socnetwork.server.RequestIdMiddleware.requestId
 import ru.socnetwork.server.SocNetworkServer.{
   fromOption,
   parseBody,
@@ -22,12 +24,18 @@ import ru.socnetwork.service.{
   CacheService,
   ConnectionService,
   CsvImport,
+  DialogMessageService,
   FriendshipService,
   PostService,
   RebuildCacheService,
   UserService
 }
-import ru.socnetwork.util.{InvalidBody, InvalidToken, MissingParams}
+import ru.socnetwork.util.{
+  InvalidBody,
+  InvalidToken,
+  MissingParams,
+  MissingXRequestId
+}
 import zio.http.*
 import zio.json.{EncoderOps, JsonDecoder, JsonEncoder}
 import zio.{IO, URLayer, ZIO, ZLayer}
@@ -44,7 +52,8 @@ final case class SocNetworkServer(
     migrator: DbMigrator,
     authMiddleware: AuthMiddleware,
     connectionService: ConnectionService,
-    kafkaConsumer: KafkaConsumer
+    kafkaConsumer: KafkaConsumer,
+    dialogMessageService: DialogMessageService
 ):
 
   private val userRoutes =
@@ -180,17 +189,67 @@ final case class SocNetworkServer(
       }
     )
 
-  private val app =
-    (adminRoutes ++ userRoutes ++ (postRoutes ++ friendRoutes ++ socket) @@ authMiddleware.jwtAuthentication)
+  private val dialogRoutes =
+    Routes(
+      Method.POST / "dialog" / uuid("userId") / "send" -> handler {
+        (userId: UUID, req: Request) =>
+          withContext { (user: UserInfo) =>
+            for
+              e <- parseBody[DialogMessageText](req)
+              requestId <- requestId
+              _ <- ZIO.logTrace(
+                s"SocNetwork server dialog $userId send with X-Request-ID $requestId"
+              )
+              r <- dialogMessageService.add(e, userId)
+            yield r
+          }
+      },
+      Method.GET / "dialog" / uuid("userId") / "list" -> handler {
+        (userId: UUID, req: Request) =>
+          withContext { (user: UserInfo) =>
+            for
+              requestId <- requestId
+              _ <- ZIO.logTrace(
+                s"SocNetwork server dialog $userId list with X-Request-ID $requestId"
+              )
+              r <- dialogMessageService.getById(userId)
+            yield r
+          }
+      }
+    ) @@ RequestIdMiddleware.requestIdMiddleware
+      @@ Middleware.forwardHeaders(Header.Authorization.Bearer)
+
+  val app: Routes[Any, Nothing] =
+    (adminRoutes ++ userRoutes ++ (postRoutes ++ friendRoutes ++ socket ++ dialogRoutes) @@ authMiddleware.jwtAuthentication)
       .handleErrorZIO {
-        case InvalidBody | InvalidToken | MissingParams =>
-          ZIO.succeed(Response.badRequest)
+        case InvalidBody =>
+          ZIO
+            .logError("InvalidBody")
+            .as(Response.badRequest)
+        case InvalidToken =>
+          ZIO
+            .logError("InvalidToken")
+            .as(Response.badRequest)
+        case MissingParams =>
+          ZIO
+            .logError("MissingParams")
+            .as(Response.badRequest)
+        case MissingXRequestId =>
+          ZIO
+            .logError("MissingXRequestId")
+            .as(Response.badRequest)
+        case err: ErrorResponse =>
+          ZIO
+            .logError(err.message)
+            .as(
+              Response.json(err.toJson).status(Status.InternalServerError)
+            )
         case err: Throwable =>
           ZIO
             .logError(err.getMessage)
             .as(
               Response
-                .json(ErrorResponse(err.getMessage, "", 0).toJson)
+                .json(ErrorResponse(err.getMessage, "", 500).toJson)
                 .status(Status.InternalServerError)
             )
       }
@@ -218,7 +277,8 @@ object SocNetworkServer:
       with RebuildCacheService
       with AuthMiddleware
       with ConnectionService
-      with KafkaConsumer,
+      with KafkaConsumer
+      with DialogMessageService,
     SocNetworkServer
   ] =
     ZLayer.fromFunction(SocNetworkServer.apply _)

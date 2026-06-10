@@ -17,9 +17,24 @@ import zio.kafka.producer.Producer
 import zio.redis.{CodecSupplier, Redis}
 import zio.schema.Schema
 import zio.schema.codec.{BinaryCodec, ProtobufCodec}
-import zio.{Scope, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer}
+import zio.{LogLevel, Scope, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer, Runtime}
+import zio.http.ZClient
+import zio.logging.{ConsoleLoggerConfig, LogFilter, LogFormat, consoleLogger}
 
 object Main extends ZIOAppDefault:
+
+  private val customLogger = consoleLogger(
+    ConsoleLoggerConfig(
+      LogFormat.colored,
+      LogFilter.LogLevelByNameConfig(
+        LogLevel.Info, // Уровень для всех логов по умолчанию
+        "ru.socnetwork" -> LogLevel.Trace // Для модуля dialogsocnetwork
+      )
+    )
+  )
+
+  override val bootstrap: ZLayer[Any, Nothing, Unit] =
+    Runtime.removeDefaultLoggers ++ customLogger
 
   object ProtobufCodecSupplier extends CodecSupplier:
     def get[A: Schema]: BinaryCodec[A] = ProtobufCodec.protobufCodec
@@ -55,7 +70,9 @@ object Main extends ZIOAppDefault:
         KafkaProducerLive.layer,
         KafkaConsumerLive.layer,
         Consumer.live,
-        KafkaSettings.consumerSettingsLayer
+        KafkaSettings.consumerSettingsLayer,
+        DialogMessageServiceLive.layer,
+        ZClient.default
       )
 
 //object KafkaWSNotifier extends ZIOAppDefault:

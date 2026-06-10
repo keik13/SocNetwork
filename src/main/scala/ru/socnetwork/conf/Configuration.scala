@@ -1,6 +1,8 @@
 package ru.socnetwork.conf
 
+import zio.Config.Error.InvalidData
 import zio.config.magnolia.{DeriveConfig, deriveConfig}
+import zio.http.URL
 import zio.redis.RedisConfig
 import zio.{Config, Duration, Layer, ZLayer}
 
@@ -12,7 +14,8 @@ final case class AppConfig(
     jwt: JwtConfig,
     redis: RedisConfig,
     consumerConfig: ConsumerConfig,
-    producerConfig: ProducerConfig
+    producerConfig: ProducerConfig,
+    dialogConfig: DialogConfig
 )
 
 final case class DbConfig(
@@ -47,8 +50,20 @@ final case class ProducerConfig(
     requestTimeout: Duration
 )
 
+final case class DialogConfig(url: URL)
+
 object Configuration:
   import zio.config.typesafe.*
+
+  given deriveForURL: DeriveConfig[URL] =
+    DeriveConfig[String].mapOrFail(string =>
+      URL
+        .decode(string)
+        .fold(
+          err => Left(InvalidData(message = err.getMessage)),
+          res => Right(res)
+        )
+    )
 
   val layer: Layer[
     Config.Error,
@@ -57,6 +72,7 @@ object Configuration:
       with RedisConfig
       with ConsumerConfig
       with ProducerConfig
+      with DialogConfig
   ] =
     for
       appConfig <- ZLayer.fromZIO(
@@ -69,5 +85,6 @@ object Configuration:
         ZLayer.succeed(appConfig.get.jwt) ++
         ZLayer.succeed(appConfig.get.redis) ++
         ZLayer.succeed(appConfig.get.consumerConfig) ++
-        ZLayer.succeed(appConfig.get.producerConfig)
+        ZLayer.succeed(appConfig.get.producerConfig) ++
+        ZLayer.succeed(appConfig.get.dialogConfig)
     yield l

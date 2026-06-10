@@ -7,6 +7,7 @@ import java.util.UUID
 
 case class ConnectionServiceLive(ref: Ref[ConnectionMap])
     extends ConnectionService:
+
   override def add(userId: UUID, channel: WebSocketChannel): UIO[Unit] =
     ref
       .update(map =>
