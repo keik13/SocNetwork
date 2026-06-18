@@ -74,7 +74,9 @@ final case class SocNetworkServer(
       },
       Method.GET / "user" / "get" / uuid("id") -> handler {
         (id: UUID, req: Request) =>
-          for r <- userService.getById(id)
+          for
+            r <- userService.getById(id)
+            _ <- ZIO.logInfo(s"Getting user with id $id")
           yield fromOption[User](r)
       },
       Method.GET / "user" / "search" -> handler { (req: Request) =>
