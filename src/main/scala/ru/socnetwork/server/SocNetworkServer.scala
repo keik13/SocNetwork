@@ -12,6 +12,7 @@ import ru.socnetwork.api.{
   User
 }
 import ru.socnetwork.auth.UserInfo
+import ru.socnetwork.conf.ServerConfig
 import ru.socnetwork.db.DbMigrator
 import ru.socnetwork.kafka.KafkaConsumer
 import ru.socnetwork.server.RequestIdMiddleware.requestId
@@ -53,7 +54,8 @@ final case class SocNetworkServer(
     authMiddleware: AuthMiddleware,
     connectionService: ConnectionService,
     kafkaConsumer: KafkaConsumer,
-    dialogMessageService: DialogMessageService
+    dialogMessageService: DialogMessageService,
+    server: ServerConfig
 ):
 
   private val userRoutes =
@@ -140,7 +142,9 @@ final case class SocNetworkServer(
       Method.GET / "post" / "get" / uuid("id") -> handler {
         (id: UUID, req: Request) =>
           withContext { (user: UserInfo) =>
-            for r <- postService.getById(id)
+            for
+              r <- postService.getById(id)
+              _ <- ZIO.logInfo(s"Getting post with id $id")
             yield fromOption[PostResponse](r)
           }
       },
@@ -256,7 +260,7 @@ final case class SocNetworkServer(
 
   private def run: ZIO[Any, Throwable, Nothing] = Server
     .serve(app)
-    .provide(Server.default)
+    .provide(Server.defaultWithPort(server.port))
     .tapError(err => ZIO.logError(err.getMessage))
 
   def start: ZIO[Any, Throwable, Unit] =
@@ -278,7 +282,8 @@ object SocNetworkServer:
       with AuthMiddleware
       with ConnectionService
       with KafkaConsumer
-      with DialogMessageService,
+      with DialogMessageService
+      with ServerConfig,
     SocNetworkServer
   ] =
     ZLayer.fromFunction(SocNetworkServer.apply _)

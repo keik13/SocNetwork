@@ -10,12 +10,17 @@ final case class RootConfig(
     config: AppConfig
 )
 final case class AppConfig(
+    server: ServerConfig,
     db: DbConfig,
     jwt: JwtConfig,
     redis: RedisConfig,
     consumerConfig: ConsumerConfig,
     producerConfig: ProducerConfig,
     dialogConfig: DialogConfig
+)
+
+final case class ServerConfig(
+    port: Int
 )
 
 final case class DbConfig(
@@ -73,6 +78,7 @@ object Configuration:
       with ConsumerConfig
       with ProducerConfig
       with DialogConfig
+      with ServerConfig
   ] =
     for
       appConfig <- ZLayer.fromZIO(
@@ -86,5 +92,6 @@ object Configuration:
         ZLayer.succeed(appConfig.get.redis) ++
         ZLayer.succeed(appConfig.get.consumerConfig) ++
         ZLayer.succeed(appConfig.get.producerConfig) ++
-        ZLayer.succeed(appConfig.get.dialogConfig)
+        ZLayer.succeed(appConfig.get.dialogConfig) ++
+        ZLayer.succeed(appConfig.get.server)
     yield l
