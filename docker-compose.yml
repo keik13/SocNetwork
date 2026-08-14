@@ -39,6 +39,7 @@ services:
       DB_URL_MASTER: "jdbc:postgresql://postgres:5432/soc_network"
       DB_URL_SLAVE: "jdbc:postgresql://postgres:5432/soc_network"
       REDIS_HOST: "redis"
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9093
     depends_on:
       - postgres
       - redis
